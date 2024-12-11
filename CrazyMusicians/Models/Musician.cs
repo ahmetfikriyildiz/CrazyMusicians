@@ -2,9 +2,9 @@
 {
     public class Musician
     {
-        public int Id { get; set; }
+        public int ID { get; set; }
         public string? Name { get; set; }
-        public string? Occupation { get; set; }
-        public string? FunFact { get; set; }
+        public string? Profession { get; set; }
+        public string? FunFeature { get; set; }
     }
 }

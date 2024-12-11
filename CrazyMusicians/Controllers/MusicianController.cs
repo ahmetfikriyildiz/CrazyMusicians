@@ -1,97 +1,114 @@
-﻿using CrazyMusicians.Models;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using CrazyMusicians.Models;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace CrazyMusicians.Controllers
+
+namespace CrazyMusiciansAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class MusicianController : ControllerBase
+    [Route("api/[controller]")]
+    public class MusiciansController : ControllerBase
     {
-        private static List<Musician> _musicians = new()
+        // In-memory data
+        private static List<Musician> musicians = new List<Musician>
         {
-            new Musician { Id = 1, Name = "Ahmet Çalgı", Occupation = "Ünlü Çalgı Çalar", FunFact = "Her zaman yanlış nota çalar, ama çok eğlenceli" },
-            new Musician { Id = 2, Name = "Zeynep Melodi", Occupation = "Popüler Melodi Yazarı", FunFact = "Şarkıları yanlış anlaşılır ama çok popüler" },
-            new Musician { Id = 3, Name = "Cemil Akor", Occupation = "Çılgın Akorist", FunFact = "Akorları sık değiştirir, ama şaşırtıcı derecede yetenekli" },
-            new Musician { Id = 4, Name = "Fatma Nota", Occupation = "Sürpriz Nota Üreticisi", FunFact = "Nota üretirken sürekli sürprizler hazırlar" },
-            new Musician { Id = 5, Name = "Hasan Ritim", Occupation = "Ritim Canavarı", FunFact = "Her ritmi kendi tarzında yapar, hiç uymaz ama komiktir" },
-            new Musician { Id = 6, Name = "Elif Armoni", Occupation = "Armoni Ustası", FunFact = "Armonilerini bazen yanlış çalar, ama çok yaratıcıdır" },
-            new Musician { Id = 7, Name = "Ali Perde", Occupation = "Perde Uygulayıcı", FunFact = "Her perdeyi farklı şekilde çalar, her zaman sürprizlidir" },
-            new Musician { Id = 8, Name = "Ayşe Rezonans", Occupation = "Rezonans Uzmanı", FunFact = "Rezonans konusunda uzman, ama bazen çok gürültü çıkarır" },
-            new Musician { Id = 9, Name = "Murat Ton", Occupation = "Tonlama Meraklısı", FunFact = "Tonlamalarındaki farklılıklar bazen komik, ama oldukça ilginç" },
-            new Musician { Id = 10,Name = "Selin Akor", Occupation = "Akor Sihirbazı", FunFact = "Akorları değiştirdiğinde bazen sihirli bir hava yaratır" },
+            new Musician{ID = 1, Name = "Ahmet Çalgı", Profession = "Ünlü Çalgı Çalar", FunFeature = "Her zaman yanlış nota çalar, ama çok eğlenceli."},
+            new Musician{ID = 2, Name = "Zeynep Melodi", Profession = "Popüler Melodi Yazarı", FunFeature = "Şarkıları yanlış anlaşılır ama çok popüler."},
+            new Musician{ID = 3, Name = "Cemil Akor", Profession = "Çılgın Akorist", FunFeature = "Akorları sık değiştirir, ama şaşırtıcı derecede yetenekli."},
+            new Musician{ID = 4, Name = "Fatma Nota", Profession = "Sürpriz Nota Üreticisi", FunFeature = "Nota üretirken sürekli sürprizler hazırlar."},
+            new Musician{ID = 5, Name = "Hasan Ritim", Profession = "Ritim Canavarı", FunFeature = "Her ritmi kendi tarzında yapar, hiç uymaz ama komiktir."},
+            new Musician{ID = 6, Name = "Elif Armoni", Profession = "Armoni Ustası", FunFeature = "Armonilerini bazen yanlış çalar, ama çok yaratıcıdır."},
+            new Musician{ID = 7, Name = "Ali Perde", Profession = "Perde Uygulayıcı", FunFeature = "Her perdeyi farklı şekilde çalar, her zaman sürprizlidir."},
+            new Musician{ID = 8, Name = "Ayşe Rezonans", Profession = "Rezonans Uzmanı", FunFeature = "Rezonans konusunda uzman, ama bazen çok gurultu çıkarır."},
+            new Musician{ID = 9, Name = "Murat Ton", Profession = "Tonlama Meraklısı", FunFeature = "Tonlamalarındaki farklılıklar bazen komik, ama oldukça ilginç."},
+            new Musician{ID = 10, Name = "Selin Akor", Profession = "Akor Sihirbazı", FunFeature = "Akorları değiştirdiğinde bazen sihirli bir hava yaratır."}
         };
 
+        // GET api/musicians
         [HttpGet]
-        public ActionResult<List<Musician>> Get()
+        public ActionResult<IEnumerable<Musician>> GetAllMusicians()
         {
-            return _musicians;
+            return Ok(musicians);
         }
-        [HttpGet]
-        [Route("{id}")]
-        public ActionResult<Musician> Get(int id)
+
+        // GET api/musicians/search?name=Ahmet
+        [HttpGet("search")]
+        public ActionResult<IEnumerable<Musician>> SearchMusicians([FromQuery] string name)
         {
-            var musician = _musicians.FirstOrDefault(m => m.Id == id);
+            var results = musicians.Where(m => m.Name.Contains(name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+            return Ok(results);
+        }
+
+        // POST api/musicians
+        [HttpPost]
+        public ActionResult CreateMusician([FromBody] Musician newMusician)
+        {
+            if (newMusician == null || string.IsNullOrEmpty(newMusician.Name))
+            {
+                return BadRequest("Musician data is invalid.");
+            }
+
+            newMusician.ID = musicians.Max(m => m.ID) + 1; // Auto-increment ID
+            musicians.Add(newMusician);
+            return CreatedAtAction(nameof(GetMusicianById), new { id = newMusician.ID }, newMusician);
+        }
+
+        // GET api/musicians/{id}
+        [HttpGet("{id}")]
+        public ActionResult<Musician> GetMusicianById(int id)
+        {
+            var musician = musicians.FirstOrDefault(m => m.ID == id);
             if (musician == null)
             {
-                return NotFound();
+                return NotFound("Musician not found.");
             }
-            return musician;
+
+            return Ok(musician);
         }
-        [HttpPost]
-        public ActionResult Post(Musician musician)
+
+        // PUT api/musicians/{id}
+        [HttpPut("{id}")]
+        public ActionResult UpdateMusician(int id, [FromBody] Musician updatedMusician)
         {
-            musician.Id = _musicians.Max(m => m.Id) + 1;
-            _musicians.Add(musician);
-            return CreatedAtAction(nameof(Get), new { id = musician.Id }, musician);
-        }
-        [HttpPatch]
-        [Route("{id}")]
-        public ActionResult Patch(int id, Musician musician)
-        {
-            var existingMusician = _musicians.FirstOrDefault(m => m.Id == id);
-            if (existingMusician == null)
+            var musician = musicians.FirstOrDefault(m => m.ID == id);
+            if (musician == null)
             {
-                return NotFound();
+                return NotFound("Musician not found.");
             }
-            if (musician.Name != null)
-            {
-                existingMusician.Name = musician.Name;
-            }
-            if (musician.Occupation != null)
-            {
-                existingMusician.Occupation = musician.Occupation;
-            }
-            if (musician.FunFact != null)
-            {
-                existingMusician.FunFact = musician.FunFact;
-            }
+
+            musician.Name = updatedMusician.Name;
+            musician.Profession = updatedMusician.Profession;
+            musician.FunFeature = updatedMusician.FunFeature;
+
             return NoContent();
         }
-        [HttpPut]
-        [Route("{id}")]
-        public ActionResult Put(int id, Musician musician)
+
+        // PATCH api/musicians/{id}
+        [HttpPatch("{id}")]
+        public ActionResult UpdateMusicianFeature(int id, [FromBody] string funFeature)
         {
-            var existingMusician = _musicians.FirstOrDefault(m => m.Id == id);
-            if (existingMusician == null)
+            var musician = musicians.FirstOrDefault(m => m.ID == id);
+            if (musician == null)
             {
-                return NotFound();
+                return NotFound("Musician not found.");
             }
-            existingMusician.Name = musician.Name;
-            existingMusician.Occupation = musician.Occupation;
-            existingMusician.FunFact = musician.FunFact;
+
+            musician.FunFeature = funFeature;
             return NoContent();
         }
-        [HttpDelete]
-        [Route("{id}")]
-        public ActionResult Delete(int id)
+
+        // DELETE api/musicians/{id}
+        [HttpDelete("{id}")]
+        public ActionResult DeleteMusician(int id)
         {
-            var existingMusician = _musicians.FirstOrDefault(m => m.Id == id);
-            if (existingMusician == null)
+            var musician = musicians.FirstOrDefault(m => m.ID == id);
+            if (musician == null)
             {
-                return NotFound();
+                return NotFound("Musician not found.");
             }
-            _musicians.Remove(existingMusician);
+
+            musicians.Remove(musician);
             return NoContent();
         }
     }
